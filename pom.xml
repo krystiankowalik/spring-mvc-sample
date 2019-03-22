@@ -35,6 +35,14 @@
         <artifactId>coveralls-maven-plugin</artifactId>
         <version>3.1.0</version>
       </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-war-plugin</artifactId>
+            <version>3.2.2</version>
+            <configuration>
+              <webappDirectory>somedirectory</webappDirectory>
+            </configuration>
+          </plugin>
     </plugins>
   </build>
 
@@ -123,6 +131,11 @@
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
+      <artifactId>spring-jdbc</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
       <version>${spring.version}</version>
     </dependency>
@@ -156,6 +169,15 @@
       <version>${thymeleaf.version}</version>
       <scope>runtime</scope>
     </dependency>
+
+    <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>5.1.6</version>
+    </dependency>
+
+
   </dependencies>
 
   <properties>
@@ -180,4 +202,6 @@
       <url>file://${project.basedir}/repo</url>
     </repository>
   </repositories>
+
+
 </project>
