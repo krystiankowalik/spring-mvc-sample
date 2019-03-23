@@ -15,15 +15,15 @@
     </bean>
 
     <jee:jndi-lookup jndi-name="jdbc/TestDB"
-                     id="myDataSource" />
+                     id="myDataSource"/>
 
 
     <!--<bean id="myDataSource"-->
-          <!--class="org.springframework.jdbc.datasource.DriverManagerDataSource">-->
-        <!--<property name="driverClassName" value="com.mysql.jdbc.Driver" />-->
-        <!--<property name="url" value="jdbc:mysql://localhost:3306/mydb" />-->
-        <!--<property name="username" value="myuser" />-->
-        <!--<property name="password" value="mypassword" />-->
+    <!--class="org.springframework.jdbc.datasource.DriverManagerDataSource">-->
+    <!--<property name="driverClassName" value="com.mysql.jdbc.Driver" />-->
+    <!--<property name="url" value="jdbc:mysql://localhost:3306/mydb" />-->
+    <!--<property name="username" value="myuser" />-->
+    <!--<property name="password" value="mypassword" />-->
     <!--</bean>-->
 
 
@@ -34,8 +34,69 @@
 
     <bean id="myDaoImpl"
           class="org.example.data.MyDaoImpl">
-
         <constructor-arg ref="myDataSource"/>
     </bean>
 
+
+    <!--JndiTemplate will define JMS connection details-->
+    <bean id="jndiTemplate" class="org.springframework.jndi.JndiTemplate">
+        <property name="environment">
+            <props>
+                <prop key="java.naming.factory.initial">com.tibco.tibjms.naming.TibjmsInitialContextFactory</prop>
+                <prop key="java.naming.provider.url">tcp://localhost:7222</prop>
+                <prop key="java.naming.security.principal">admin</prop>
+                <prop key="java.naming.security.credentials">mypassword</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!--JndiObjectFactoryBean will define JMS queue factory which will be use for sending msg on queue-->
+    <bean id="internalJmsQueueConnectionFactory" class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiTemplate">
+            <ref bean="jndiTemplate"/>
+        </property>
+        <property name="jndiName">
+            <value>QueueConnectionFactory</value>
+        </property>
+    </bean>
+
+    <!--We will also define queue name. $queues.<<name>> will be used to resolve ambiguity between queues and topics-->
+    <bean id="queue1" class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiTemplate">
+            <ref bean="jndiTemplate"/>
+        </property>
+        <property name="jndiName">
+            <value>myqueue</value>
+        </property>
+    </bean>
+
+    <!--JmsTemplate object will use factory & queue define above to send message-->
+    <bean id="jmsTemplateQueueTest1" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory">
+            <ref bean="internalJmsQueueConnectionFactory"/>
+        </property>
+        <property name="defaultDestination">
+            <ref bean="queue1"/>
+        </property>
+        <property name="receiveTimeout">
+            <value>30000</value>
+        </property>
+    </bean>
+
+    <!--This is bean for com.main.services.QueueMsgSender class. We will inject JmsTemplate-Queue created above. -->
+    <bean id="queueMsgSender" class="org.example.message.QueueMsgSender">
+        <property name="jmsTemplate" ref="jmsTemplateQueueTest1"/>
+    </bean>
+
+    <!--This is bean for creating Jms queue listener-->
+    <bean id="jmsQueueReceiver" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="destination" ref="queue1"/>
+        <property name="connectionFactory" ref="internalJmsQueueConnectionFactory"/>
+        <property name="concurrentConsumers" value="1"/>
+        <property name="maxConcurrentConsumers" value="1"/>
+        <property name="messageListener" ref="msgListener"/>
+    </bean>
+    <bean id="msgListener" class="org.example.message.MsgListener"/>
+
 </beans>
+
